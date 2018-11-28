@@ -47,9 +47,6 @@ func Open(addr string) (*bufio.ReadWriter, error) {
 	s = s + port
 	// Dial the remote process.
 	log.Println("Dial " + s)
-	//IP := strings.Split()
-	//outgoing := net.TCPAddr{Port: 8080}
-	//destination := net.TCPAddr{IP}
 	conn, err := net.Dial("tcp", s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Dialing "+addr+" failed")
