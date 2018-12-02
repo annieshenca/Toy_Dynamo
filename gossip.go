@@ -22,7 +22,6 @@ import (
 type GossipVals struct {
 	view View
 	kvs  dbAccess
-	// tcp?
 }
 
 // Global variable for easier time tracking
