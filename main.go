@@ -23,6 +23,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 )
 
 // Versioning info defined via linker flags at compile time
@@ -58,21 +59,27 @@ func main() {
 	str := os.Getenv("VIEW")
 	log.Println("My view is: " + str)
 
+	// Store s as the number of shards from env
 	// docker run -p 8082:8080 --net=mynet --ip=10.0.0.2 -e VIEW="10.0.0.2:8080,10.0.0.3:8080,10.0.0.4:8080" -e IP_PORT="10.0.0.2:8080" -e S="3" REPLICA_1
 	s := os.Getenv("S")
-	log.Println("I belong in shard#" + s)
+	log.Println("There is total of " + s + " shard(s)")
+	// Convert string to int
+	numshards, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
 
 	// Create a viewList and load the view into it
 	MyView := NewView(myIP, str)
 
 	// Create a shardList and create the seperation of shard ID to servers
-	// MyShard := NewShard(myIP, MyView, numShard)
+	// MyShard := NewShard(myIP, MyView, numshards)
 
 	// Make a KVS to use as the db
 	k := NewKVS()
 
 	// The App object is the front end and has references to the KVS and viewList
-	a := App{db: k, view: *MyView}
+	a := App{db: k, view: *MyView, shard: *MyShard}
 
 	log.Println("Starting server...")
 

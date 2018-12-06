@@ -17,13 +17,13 @@ type Shard interface {
 	Count() int
 
 	// Returns the number of elemetns in the shard map
-	Contains(shardID string) bool
+	Contains(string) bool
 
 	// Deletes a shard ID from the shard list
-	Remove(shardID string) bool
+	Remove(string) bool
 
 	// Inserts an shard ID into the shard list
-	Add(shardID string) bool
+	Add(string) bool
 
 	// Returns the actual shard ID I am in
 	Primary() string
@@ -105,20 +105,20 @@ func (s *shardList) String() string {
 }
 
 // NewShard creates a shardlist object and initializes it with the input string
-// func NewShard(main string, input string) *shardList {
-// 	// Make a new map
+// func NewShard(main string, input *viewList, numshards int) *shardList {
+// 	// // Make a new map
 // 	s := make(map[string]string)
 
-// 	// Convert the input string into a slice
-// 	slice := strings.Split(input, ",")
+// 	// // Convert the input string into a slice
+// 	// slice := strings.Split(input, ",")
 
-// 	// Insert each element of the slice into the map
-// 	for _, s := range slice {
-// 		v[s] = s
-// 	}
+// 	// // Insert each element of the slice into the map
+// 	// for _, s := range slice {
+// 	// 	v[s] = s
+// 	// }
 
-// 	list := viewList{
-// 		views:   v,
+// 	list := shardList{
+// 		views:   s,
 // 		primary: main,
 // 	}
 // 	return &list
