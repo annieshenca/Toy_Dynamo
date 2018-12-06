@@ -66,7 +66,7 @@ func main() {
 	MyView := NewView(myIP, str)
 
 	// Create a shardList and create the seperation of shard ID to servers
-	// MyShard := NewShard(myIP, MyView)
+	// MyShard := NewShard(myIP, MyView, numShard)
 
 	// Make a KVS to use as the db
 	k := NewKVS()
