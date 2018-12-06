@@ -445,6 +445,157 @@ func sendViewList(ip string, v []string) error {
 	}
 	return nil
 }
+func sendDeleteRequest(ip string, p PutRequest) (bool, error) {
+	rw, err := Open(ip)
+	if err != nil {
+		return false, errors.Wrap(err, "Client: failed to open connection to "+ip)
+	}
+	enc := gob.NewEncoder(rw)
+	log.Println("Sending command initialization: 'delete'")
+	n, err := rw.WriteString("delete\n")
+	if err != nil {
+		return false, errors.Wrap(err, "Could not write delete data ("+strconv.Itoa(n)+" bytes written)")
+	}
+
+	log.Println("Encoding PutRequest")
+	err = enc.Encode(p)
+	if err != nil {
+		return false, errors.Wrapf(err, "Encode failed for PutRequest: %#v", p)
+
+	}
+	log.Println("Flushing buffer")
+	err = rw.Flush()
+	if err != nil {
+		return false, errors.Wrap(err, "Flush failed")
+	}
+
+	log.Println("Reading response")
+	resp, err := rw.ReadString('\n')
+	if err != nil {
+		log.Println("Error decoding response data:", err)
+		return false, err
+	}
+	resp = strings.Trim(resp, "\n ")
+	if resp == "true" {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func sendPutRequest(ip string, p PutRequest) (bool, error) {
+	rw, err := Open(ip)
+	if err != nil {
+		return false, errors.Wrap(err, "Client: failed to open connection to "+ip)
+	}
+	enc := gob.NewEncoder(rw)
+	log.Println("Sending command initialization: 'put'")
+	n, err := rw.WriteString("put\n")
+	if err != nil {
+		return false, errors.Wrap(err, "Could not write put data ("+strconv.Itoa(n)+" bytes written)")
+	}
+
+	log.Println("Encoding PutRequest")
+	err = enc.Encode(p)
+	if err != nil {
+		return false, errors.Wrapf(err, "Encode failed for PutRequest: %#v", p)
+
+	}
+	log.Println("Flushing buffer")
+	err = rw.Flush()
+	if err != nil {
+		return false, errors.Wrap(err, "Flush failed")
+	}
+
+	log.Println("Reading response")
+	resp, err := rw.ReadString('\n')
+	if err != nil {
+		log.Println("Error decoding response data:", err)
+		return false, err
+	}
+	resp = strings.Trim(resp, "\n ")
+	if resp == "true" {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func sendContainsRequest(ip string, g GetRequest) (ContainsResponse, error) {
+	rw, err := Open(ip)
+	if err != nil {
+		return ContainsResponse{}, errors.Wrap(err, "Client: failed to open connection to "+ip)
+	}
+	enc := gob.NewEncoder(rw)
+	log.Println("Sending command initialization: 'contains'")
+	n, err := rw.WriteString("contains\n")
+	if err != nil {
+		return ContainsResponse{}, errors.Wrap(err, "Could not write contains data ("+strconv.Itoa(n)+" bytes written)")
+	}
+
+	log.Println("Encoding GetRequest")
+	err = enc.Encode(g)
+	if err != nil {
+		return ContainsResponse{}, errors.Wrapf(err, "Encode failed for GetRequest: %#v", g)
+
+	}
+	log.Println("Flushing buffer")
+	err = rw.Flush()
+	if err != nil {
+		return ContainsResponse{}, errors.Wrap(err, "Flush failed")
+	}
+
+	var data ContainsResponse
+
+	// Create a decoder that decodes directly into a struct variable.
+	dec := gob.NewDecoder(rw)
+	log.Println("Reading ContainsResponse")
+	err = dec.Decode(&data)
+	if err != nil {
+		log.Println("Error decoding GOB data:", err)
+		return ContainsResponse{}, err
+	}
+
+	return data, nil
+}
+
+func sendGetRequest(ip string, g GetRequest) (GetResponse, error) {
+	rw, err := Open(ip)
+	if err != nil {
+		return GetResponse{}, errors.Wrap(err, "Client: failed to open connection to "+ip)
+	}
+	enc := gob.NewEncoder(rw)
+	log.Println("Sending command initialization: 'get'")
+	n, err := rw.WriteString("get\n")
+	if err != nil {
+		return GetResponse{}, errors.Wrap(err, "Could not write get data ("+strconv.Itoa(n)+" bytes written)")
+	}
+
+	log.Println("Encoding GetRequest")
+	err = enc.Encode(g)
+	if err != nil {
+		return GetResponse{}, errors.Wrapf(err, "Encode failed for GetRequest: %#v", g)
+
+	}
+	log.Println("Flushing buffer")
+	err = rw.Flush()
+	if err != nil {
+		return GetResponse{}, errors.Wrap(err, "Flush failed")
+	}
+
+	var data GetResponse
+
+	// Create a decoder that decodes directly into a struct variable.
+	dec := gob.NewDecoder(rw)
+	log.Println("Reading GetResponse")
+	err = dec.Decode(&data)
+	if err != nil {
+		log.Println("Error decoding GOB data:", err)
+		return GetResponse{}, err
+	}
+
+	return data, nil
+}
 
 func askForHelp(ip string) error {
 	rw, err := Open(ip)
