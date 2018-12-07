@@ -60,6 +60,20 @@ type Shard interface {
 }
 
 // ShardList is a struct which implements the Shard interface and holds shard ID system of servers
+/*
+ShardList: {
+	ShardStrings: {
+        A: "192.168.0.10:8081,192.168.0.10:8082",
+        B: "192.168.0.10:8083,192.168.0.10:8084",
+    },
+    ShardSlices: {
+        A: ["192.168.0.10:8081", "192.168.0.10:8082"],
+        B: ["192.168.0.10:8083", "192.168.0.10:8084"],
+    },
+    PrimaryShard: "A",
+    PrimaryIP: "192.168.0.10:8081",
+}
+*/
 type ShardList struct {
 	ShardString  map[string]string   // This is the map of shard IDs to server names
 	ShardSlice   map[string][]string // this is a mapping of shard IDs to slices of server strings
@@ -212,8 +226,10 @@ func (s *ShardList) Remove(shardID string) bool {
 // Add inserts an shard ID into the shard list
 func (s *ShardList) Add(shardID string) bool {
 	if s != nil {
-		// s.shards[shardID] = shardID
+		//s.ShardString[] +=
+		//s.ShardSlice[PrimaryShard] = append()
 		shardChange = true
+		s.Size++
 		return true
 	}
 	return false
