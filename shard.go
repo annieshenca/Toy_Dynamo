@@ -235,7 +235,7 @@ func (s *ShardList) NumLeftoverServers() int {
 func (s *ShardList) NumServerPerShard() int {
 	if s != nil {
 		i := size / numShards
-		if i > 2 {
+		if i >= 2 {
 			return i
 		}
 	}
