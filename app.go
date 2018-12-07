@@ -35,8 +35,8 @@ import (
 
 // App is a struct representing the externally-accessible state of the data store
 type App struct {
-	db   dbAccess
-	view viewList
+	db    dbAccess
+	shard Shard
 }
 
 // Initialize takes a Listener, assigns a Router to it, and then attaches HTTP handler
@@ -58,6 +58,10 @@ func (app *App) Initialize(l net.Listener) {
 	r.HandleFunc(view, app.ViewPutHandler).Methods(http.MethodPut)
 	r.HandleFunc(view, app.ViewGetHandler).Methods(http.MethodGet)
 	r.HandleFunc(view, app.ViewDeleteHandler).Methods(http.MethodDelete)
+
+	// Thse handlers implement the /shard endpoint and handle GET, PUT
+	r.HandleFunc(shard, app.ShardPutHandler).Methods(http.MethodPut)
+	r.HandleFunc(shard, app.ShardGetHandler).Methods(http.MethodGet)
 
 	// These handlers implement the KVS API and handle GET, PUT, DELETE
 	s.HandleFunc(keySuffix, app.PutHandler).Methods(http.MethodPut)

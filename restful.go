@@ -32,4 +32,8 @@ type Restful interface {
 	ViewPutHandler(http.ResponseWriter, *http.Request)
 	ViewGetHandler(http.ResponseWriter, *http.Request)
 	ViewDeleteHandler(http.ResponseWriter, *http.Request)
+
+	// ShardHandlers respond to /shard  shard change requests of Get, Put
+	ShardGetHandler(http.ResponseWriter, *http.Request)
+	ShardPutHandler(http.ResponseWriter, *http.Request)
 }

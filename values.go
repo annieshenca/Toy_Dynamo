@@ -18,6 +18,10 @@ const (
 	port      = ":8080"           // This is used for the TCP module
 	search    = "/search"
 	view      = "/view"
+	shard     = "/shard"
+	members   = "/members"
+	count     = "/count"
+	changeNum = "/changeShardNumber"
 	keySuffix = "/{subject}"
 
 	// Maximum input restrictions
