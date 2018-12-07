@@ -262,6 +262,20 @@ func (s *ShardList) NumLeftoverServers() int {
 	return -1
 }
 
+// String returns a comma-separated string of shards
+func (s *ShardList) String() string {
+	if s != nil {
+		str := make([]string, s.NumShards)
+
+		for i := 0; i < s.NumShards; i++ {
+			str[i] = shardNames[i]
+		}
+		j := strings.Join(str, ",")
+		return j
+	}
+	return ""
+}
+
 // NumServerPerShard returns number of servers per shard (equally) after reshuffle
 func (s *ShardList) NumServerPerShard() int {
 	if s != nil {
