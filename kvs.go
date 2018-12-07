@@ -223,7 +223,7 @@ func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[str
 	whoShard := r.successor(getKeyPosition(key))
 	//If it isnt my key then I need to ask the server who it belongs to
 	if whoShard != MyShard.primary() {
-		log.Println("key not in my shard, requesting id of another shard" + whoShard)
+		log.Println("key requested to Get not in my shard, requesting id of another shard" + whoShard)
 		//Constructing the GetRequest Struct
 		GetSend := GetRequest{
 			Key:     key,
@@ -266,7 +266,26 @@ func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[str
 
 // Delete sets the tombstone associated with a particular key, updates its version and timestamp, so it appears dead
 func (k *KVS) Delete(key string, time time.Time, payload map[string]int) bool {
+
 	log.Println("Attempting to delete key ")
+	//Get the key position
+	whoShard := r.successor(getKeyPosition(key))
+	//If it isnt my key then I need to ask the server who it belongs to
+	if whoShard != MyShard.primary() {
+		log.Println("Key requested to Delete not in my shard, requesting id of another shard" + whoShard)
+		//Constructing the PutRequest Struct
+		GetDelete := PutRequest{
+			Key:       key,
+			Value:     "", //This will not be used
+			Timestamp: time,
+			Payload:   payload,
+		}
+		//Retrieving bob's IP
+		bobIP := getIP(whoShard)
+		//Sending the request and recieving bob's responce
+		bobResp, _ := sendDeleteRequest(bobIP, GetDelete)
+		return bobResp
+	}
 	// Grab a write lock
 	k.mutex.Lock()
 	defer k.mutex.Unlock()
@@ -282,6 +301,7 @@ func (k *KVS) Delete(key string, time time.Time, payload map[string]int) bool {
 		wakeGossip = true
 		return true
 	}
+
 	log.Println("Key not found")
 	return false
 }
@@ -296,6 +316,24 @@ func (k *KVS) Put(key string, val string, time time.Time, payload map[string]int
 	log.Println("Attempting to insert key-value pair")
 
 	if keyLen <= maxKey && valLen <= maxVal {
+		//Get the key position
+		whoShard := r.successor(getKeyPosition(key))
+		//If it isnt my key then I need to ask the server who it belongs to
+		if whoShard != MyShard.primary() {
+			log.Println("Key requested to Put not in my shard, requesting id of another shard" + whoShard)
+			//Constructing the PutRequest Struct
+			GetDelete := PutRequest{
+				Key:       key,
+				Value:     val,
+				Timestamp: time,
+				Payload:   payload,
+			}
+			//Retrieving bob's IP
+			bobIP := getIP(whoShard)
+			//Sending the request and recieving bob's responce
+			bobResp, _ := sendPutRequest(bobIP, GetDelete)
+			return bobResp
+		}
 		log.Println("Key and value OK, inserting to DB")
 		// Grab a write lock
 		k.mutex.Lock()
@@ -319,6 +357,7 @@ func (k *KVS) Put(key string, val string, time time.Time, payload map[string]int
 		wakeGossip = true
 		return true
 	}
+
 	log.Println("Invalid entry for key or value")
 	return false
 }
