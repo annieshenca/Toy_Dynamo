@@ -62,6 +62,12 @@ type Shard interface {
 
 	// GetShardGlob returns a Shard object
 	GetShardGlob() ShardGlob
+
+	// GetAllShards returns a comma separated string of all shard ids
+	GetAllShards() string
+
+	// GetMembers returns a comma separated string of all member servers addresses
+	GetMembers(string) string
 }
 
 // ShardList is a struct which implements the Shard interface and holds shard ID system of servers
@@ -364,7 +370,7 @@ func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
 
 // ChangeShardNumber is called by the REST API
 // Returns true if the change is legal, false otherwise
-func (s *ShardList) ChangeShardNumber(n int) bool {
+func (s *ShardList) ChangeShardNumber(n int, err error) bool {
 	if s.Size/n < 2 {
 		return false
 	}
@@ -400,4 +406,15 @@ func (s *ShardList) ChangeShardNumber(n int) bool {
 // ShuffleServers redistributes servers among shards
 func (s *ShardList) ShuffleServers() {
 
+}
+
+// GetAllShards returns a comma separated string of all shard ids
+func (s *ShardList) GetAllShards() string {
+	return "0,1,2"
+}
+
+// GetMembers returns a comma separated string of all member servers addresses
+func (s *ShardList) GetMembers(id string) string {
+	id = "176.32.164.2:8080,176.32.164.3:8080"
+	return id
 }

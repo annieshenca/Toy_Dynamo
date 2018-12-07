@@ -21,8 +21,6 @@ const (
 	shard   = "/shard"
 	members = "/members"
 	count   = "/count"
-	myID    = "/my_id"
-	allID   = "/all_ids"
 
 	changeNum   = "/changeShardNumber"
 	keySuffix   = "/{subject}"
