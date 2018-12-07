@@ -14,6 +14,7 @@ package main
 
 import (
 	"math/rand"
+	"sort"
 	"strings"
 )
 
@@ -117,7 +118,7 @@ func (s *ShardList) RandomGlobal(n int) []string {
 		n = s.Size - 1
 	}
 
-	for k, v := range s.ShardSlice {
+	for _, v := range s.ShardSlice {
 		r := rand.Int() % len(v)
 		if v[r] == s.PrimaryIP {
 			continue
@@ -174,7 +175,7 @@ func (s *ShardList) ContainsShard(shardID string) bool {
 // ContainsServer checks to see if the server exists
 func (s *ShardList) ContainsServer(ip string) bool {
 	if s != nil {
-		for k, v := range s.ShardSlice {
+		for _, v := range s.ShardSlice {
 			for _, i := range v {
 				if i == ip {
 					return true
@@ -245,6 +246,20 @@ func (s *ShardList) String() string {
 
 // NewShard creates a shardlist object and initializes it with the input string
 func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
+	shardSlice := make(map[string][]string)
+	shardString := make(map[string]string)
+	rbtree := RBTree{}
+	s := ShardList{
+		ShardSlice:  shardSlice,
+		ShardString: shardString,
+		Tree:        rbtree,
+		NumShards:   numShards,
+		PrimaryIP:   primaryIP,
+	}
+
+	sp := strings.Split(globalView, ",")
+	sorted := sort.Strings(sp)
+
 	return &ShardList{}
 }
 

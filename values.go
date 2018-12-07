@@ -53,3 +53,4 @@ var needHelp bool         // If this is true, we haven't heard anything in a whi
 var ringSize = 1000000    // The number of positions on the ring
 var numVirtualNodes = 100 // The number of virtual nodes per shard
 var shardChange bool      // If this si true, we need to communicate a shard transition
+var distributeKeys bool   // If this is true we need to check and distribute any keys
