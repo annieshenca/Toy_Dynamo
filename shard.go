@@ -215,21 +215,24 @@ func (s *ShardList) ContainsServer(ip string) bool {
 // Remove deletes a shard ID from the shard list
 func (s *ShardList) Remove(shardID string) bool {
 	if s != nil {
-		// TODO we need to also move the servers and stuff
+		delete(s.ShardString, shardID)
 		delete(s.ShardSlice, shardID)
+		s.NumShards--
 		shardChange = true
 		return true
 	}
 	return false
 }
 
-// Add inserts an shard ID into the shard list
-func (s *ShardList) Add(shardID string) bool {
+// Add inserts an shard ID into the my shard list
+func (s *ShardList) Add(newShardID string) bool {
 	if s != nil {
-		//s.ShardString[] +=
-		//s.ShardSlice[PrimaryShard] = append()
+		// QUESTION: is here where I choose the random name, or the caller?
+		// Insert newShardID into both maps
+		s.ShardString[newShardID] = ""
+		s.ShardSlice[newShardID] = append(s.ShardSlice[newShardID], "")
+		s.NumShards++
 		shardChange = true
-		s.Size++
 		return true
 	}
 	return false
