@@ -60,8 +60,11 @@ func (app *App) Initialize(l net.Listener) {
 	r.HandleFunc(view, app.ViewDeleteHandler).Methods(http.MethodDelete)
 
 	// Thse handlers implement the /shard endpoint and handle GET, PUT
-	r.HandleFunc(shard, app.ShardPutHandler).Methods(http.MethodPut)
-	r.HandleFunc(shard, app.ShardGetHandler).Methods(http.MethodGet)
+	r.HandleFunc(shard+changeNum, app.ShardPutDiffShardNumHandler).Methods(http.MethodPut)
+	r.HandleFunc(shard+myID, app.ShardGetMyIdHandler).Methods(http.MethodGet)
+	r.HandleFunc(shard+allID, app.ShardGetAllHandler).Methods(http.MethodGet)
+	r.HandleFunc(shard+members, app.ShardGetMembersHandler).Methods(http.MethodGet)
+	r.HandleFunc(shard+count, app.ShardGetNumKeysHandler).Methods(http.MethodGet)
 
 	// These handlers implement the KVS API and handle GET, PUT, DELETE
 	s.HandleFunc(keySuffix, app.PutHandler).Methods(http.MethodPut)
@@ -307,6 +310,7 @@ func (app *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	key := vars["subject"]
 
 	// These two variables are declared here and assigned further down.
+	//var owner int						  // Shard id of the node who is currently responsible for this key-value
 	var payloadMap map[string]interface{} // Intermediate map for decoding
 	var payloadString string              // Payload sent by the client
 	var err error                         // Error value
@@ -775,6 +779,269 @@ func (app *App) ViewDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
 			"result": "Error",
 			"msg":    deletePort + " is not in current view",
+		}
+		body, err = json.Marshal(resp)
+		if err != nil {
+			log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
+		}
+	}
+
+	w.Write(body)
+}
+
+func (app *App) ShardGetMyIdHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Handling /shard GET request")
+
+	// Declare some vars
+	var body []byte
+	var err error
+	var str string
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // code 200
+
+	// returns the shard I am in
+	container_id := PrimaryID()
+
+	// Package it into a map->JSON->[]byte
+	resp := map[string]interface{}{
+		"id": str,
+	}
+	body, err = json.Marshal(resp)
+	if err != nil {
+		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
+	}
+	w.Write(body)
+}
+
+// ShardGetHandler returns the container's shard id
+func (app *App) ShardGetAllHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Handling /shard GET request")
+
+	// Declare some vars
+	var body []byte
+	var err error
+	var str string
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // code 200
+
+	// not sure how to tell the diff between my_ids and all_ids
+
+	// returns the shard I am in
+	container_id := PrimaryID()
+
+	// Package it into a map->JSON->[]byte
+	resp := map[string]interface{}{
+		"id": str,
+	}
+	body, err = json.Marshal(resp)
+	if err != nil {
+		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
+	}
+	w.Write(body)
+}
+
+// ShardGetHandler returns all of the shard id's
+func (app *App) ShardGetAllHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Handling /shard GET all shard id's request")
+
+	// Declare some vars
+	var body []byte
+	var err error
+	var str string
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // code 200
+
+	// extract the shard id from the request 
+		if r.Body != nil {
+		// Read the message body into a string
+		s, _ := ioutil.ReadAll(r.Body)
+		log.Println(string(s))
+
+		// Python packs the input in Unicode for some reason so we need to convert it
+		sBody, _ := url.QueryUnescape(string(s))
+			if len(body) > 0 {
+				str = strings.Split(body, "/")[1]
+				log.Println(str)
+			}
+		}
+
+	
+
+	// Turn list of members into string for JSON response
+	str := shard_id.String()
+	log.Println("Members in my shard: " + str)
+
+	// Package it into a map->JSON->[]byte
+	resp := map[string]interface{}{
+		"result":    "Success",
+		"shard_ids": str,
+	}
+	body, err = json.Marshal(resp)
+	if err != nil {
+		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
+	}
+	w.Write(body)
+}
+
+// SearchHandler implements the /shard/members/{subject} endpoint and otherwise contains very similar
+// logic to the GetHandler.
+func (app *App) ShardGetMembersHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Handling GET members request")
+
+	// Read the key from the URL using Gorilla Mux URL parsing.
+	vars := mux.Vars(r)
+	key := vars["subject"]
+
+	// Declare some variables here and define them below.
+	var body []byte // Response body
+	var err error   // Error value
+	var member string // one member
+	var membersList string // comma separated members
+	
+	log.Println("GET with members: ", members)
+
+	if shard_id is invalid {
+		log.Println("Shard is is invalid")
+		w.WriteHeader(http.StatusBadRequest) // code 400
+
+		resp := map[string]interface{}{
+			"result":  "Error",
+			"msg":     "No shard with id " + string(shard_id),
+		}
+		body, err = json.Marshal(resp)
+		if err != nil {
+			log.Fatalln("FATAL Error: Failed to marshal JSON response")
+		}
+
+	} else {
+		log.Println("Here are your members in your shard")
+		// It does
+		w.WriteHeader(http.StatusOK) // code 200
+
+		// Package it into a map->JSON->[]byte
+		resp := map[string]interface{}{
+			"result":   "Success",
+			"members": members.String(),
+		}
+		body, err = json.Marshal(resp)
+		if err != nil {
+			log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
+		}
+
+	}
+
+	w.Write(body)
+}
+
+func (app *App) ShardGetNumKeysHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (app *App) ShardPutDiffShardNumHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// SearchHandler implements the /keyValue-store/search/{subject} endpoint and otherwise contains very similar
+// logic to the GetHandler.
+func (app *App) SearchHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Handling SEARCH request")
+
+	// Read the key from the URL using Gorilla Mux URL parsing.
+	vars := mux.Vars(r)
+	key := vars["subject"]
+
+	// Declare some variables here and define them below.
+	var body []byte          // Response body
+	var err error            // Error value
+	var payloadString string // Payload sent by the client
+	var payloadMap map[string]interface{}
+
+	// Same content type for everything
+	w.Header().Set("Content-Type", "application/json")
+
+	// Check that the body isn't nil
+	if r.Body != nil {
+		// Read the message body into a string
+		s, _ := ioutil.ReadAll(r.Body)
+		log.Println(string(s))
+
+		// Python packs the input in Unicode for some reason so we need to convert it
+		sBody, _ := url.QueryUnescape(string(s))
+		if len(sBody) > 0 {
+			// The actual payload we care about comes after the equals sign. This splits the
+			// input into a slice and takes the second element of that slice for the payload.
+			payloadString = strings.Split(sBody, "=")[1]
+			log.Println(payloadString)
+		}
+	}
+
+	// Create an intermediate map to parse the payload into
+	payloadMap = make(map[string]interface{})
+
+	if payloadString != "" {
+		// Read the payload into the intermediate map
+		err = json.Unmarshal([]byte(payloadString), &payloadMap)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	// Convert the intermediate map into map[string]int as needed by KVS. As with PutHandler
+	// we use a type assertion to set the value to float64 in the payloadMap and then typecast
+	// it as an integer to store it in the payloadInt map.
+	payloadInt := make(map[string]int)
+	for k, v := range payloadMap {
+		payloadInt[k] = int(v.(float64))
+	}
+	log.Println(payloadInt)
+
+	log.Println("SEARCH with payload ", payloadInt)
+
+	// See if the key exists in the db
+	alive, version := app.db.Contains(key)
+	if version < payloadInt[key] {
+		log.Println("Payload out of date error")
+		w.WriteHeader(http.StatusBadRequest) // code 400
+
+		resp := map[string]interface{}{
+			"result":  "Error",
+			"msg":     "Payload out of date",
+			"payload": payloadInt,
+		}
+		body, err = json.Marshal(resp)
+		if err != nil {
+			log.Fatalln("FATAL Error: Failed to marshal JSON response")
+		}
+
+	} else if alive {
+		log.Println("Key found in DB")
+		// It does
+		w.WriteHeader(http.StatusOK) // code 200
+
+		// Package it into a map->JSON->[]byte
+		resp := map[string]interface{}{
+			"result":   "Success",
+			"isExists": true,
+			"payload":  payloadInt,
+		}
+		body, err = json.Marshal(resp)
+		if err != nil {
+			log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
+		}
+
+	} else {
+		log.Println("Key not found in DB")
+		// The key doesn't exist in the db
+		w.WriteHeader(http.StatusOK) // code 200
+
+		// Error response
+		resp := map[string]interface{}{
+			"result":   "Success",
+			"isExists": false,
+			"payload":  payloadInt,
 		}
 		body, err = json.Marshal(resp)
 		if err != nil {
