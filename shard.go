@@ -43,6 +43,9 @@ type Shard interface {
 	// Returns a slice of shard IDs
 	GetAllShards() string
 
+	// Return a string of members of one shard
+	GetMembers(string) string
+
 	// Returns the actual shard ID I am in
 	PrimaryID() string
 
@@ -102,6 +105,14 @@ func (s *ShardList) GetAllShards() string {
 		}
 		st := strings.Join(sl, ", ")
 		return st
+	}
+	return ""
+}
+
+// GetMembers returns the members of one shard
+func (s *ShardList) GetMembers(shard string) string {
+	if s != nil {
+		return s.ShardString[shard]
 	}
 	return ""
 }
