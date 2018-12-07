@@ -665,14 +665,14 @@ func (app *App) ViewPutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Check if the port you want to add new to our view
-	if !app.view.Contains(newPort) {
+	if !app.shard.ContainsServer(newPort) {
 		log.Println("Port to be added is brand new to view: " + newPort)
 
 		// We do
 		w.WriteHeader(http.StatusOK) // code 200
 
 		// Add it
-		app.view.Add(newPort)
+		app.shard.Add(newPort)
 
 		// Successful response
 		resp := map[string]interface{}{
@@ -716,7 +716,7 @@ func (app *App) ViewGetHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK) // code 200
 
 	// Turn envView into string for JSON response
-	str = app.view.String()
+	str = app.shard.String()
 	log.Println("My view: " + str)
 
 	// Package it into a map->JSON->[]byte
@@ -750,14 +750,14 @@ func (app *App) ViewDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Check if the port you want to delete is in view
-	if app.view.Contains(deletePort) {
+	if app.shard.ContainsServer(deletePort) {
 		log.Println("Port to be deleted found in view")
 
 		// We do
 		w.WriteHeader(http.StatusOK) // code 200
 
 		// Delete it
-		app.view.Remove(deletePort)
+		app.shard.Remove(deletePort)
 
 		// Successful response
 		resp := map[string]interface{}{
