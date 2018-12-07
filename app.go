@@ -813,6 +813,7 @@ func (app *App) ShardGetMyIDHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
 	}
+
 	w.Write(body)
 }
 
@@ -838,6 +839,7 @@ func (app *App) ShardGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
 	}
+
 	w.Write(body)
 }
 
@@ -855,12 +857,12 @@ func (app *App) ShardGetMembersHandler(w http.ResponseWriter, r *http.Request) {
 	var err error      // Error value
 	var shardID string // shard id extracted from request
 	var members string // comma separated servers
-	var invalid bool
+	var invalid bool   // flag true if shard in invalid
 
 	log.Println("GET with members: ", members)
 
 	shardID = shard
-	invalid = MyShard.ContainsShard(shardID)
+	invalid = app.shard.ContainsShard(shardID)
 
 	if invalid {
 		log.Println("Shard is invalid")
@@ -897,6 +899,7 @@ func (app *App) ShardGetMembersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
+// ShardGetNumKeysHandler returns the number of keys in the shard
 func (app *App) ShardGetNumKeysHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling GET number of keys request")
 
@@ -904,9 +907,9 @@ func (app *App) ShardGetNumKeysHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	shard := vars["shard-id"]
 
-	var body []byte // Response body
-	var err error   // Error value
-	var invalid bool
+	var body []byte  // Response body
+	var err error    // Error value
+	var invalid bool // Flag true is shard id is invalid
 	var numKeys int
 	var shardID string
 
@@ -918,7 +921,7 @@ func (app *App) ShardGetNumKeysHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	numKeys = app.db.Size() * app.shard.CountServers()
+	numKeys = app.db.Size()
 
 	if invalid {
 		log.Println("Shard is invalid")
@@ -960,8 +963,7 @@ func (app *App) ShardPutChangeNumberHandler(w http.ResponseWriter, r *http.Reque
 	var err error
 	var currentCount int
 	var shardUpdate string
-	var shardNum string
-	var message string
+
 	// Check that the body isn't nil
 	if r.Body != nil {
 		// Read the message body into a string
@@ -981,14 +983,13 @@ func (app *App) ShardPutChangeNumberHandler(w http.ResponseWriter, r *http.Reque
 	currentCount = app.shard.CountServers()
 
 	// if requested shard change is less than number of current shards, return err
-	if strings.Compare(shardNum, string(currentCount)) == -1 {
+	if strings.Compare(shardUpdate, string(currentCount)) == -1 {
 		log.Println("Shard is invalid")
 		w.WriteHeader(http.StatusBadRequest) // code 400
-		message = "Not enough nodes for " + shardUpdate + " shards"
 
 		resp := map[string]interface{}{
 			"result": "Error",
-			"msg":    message,
+			"msg":    "Not enough nodes for " + shardUpdate + " shards",
 		}
 		body, err = json.Marshal(resp)
 		if err != nil {
@@ -999,11 +1000,10 @@ func (app *App) ShardPutChangeNumberHandler(w http.ResponseWriter, r *http.Reque
 	} else if !app.shard.ChangeShardNumber(strconv.Atoi(shardUpdate)) {
 		log.Println("Shard is invalid")
 		w.WriteHeader(http.StatusBadRequest) // code 400
-		message = "Not enough nodes for " + shardUpdate + " shards result in a nonfault tolerant shard"
 
 		resp := map[string]interface{}{
 			"result": "Error",
-			"msg":    message,
+			"msg":    "Not enough nodes for " + shardUpdate + " shards result in a nonfault tolerant shard",
 		}
 		body, err = json.Marshal(resp)
 		if err != nil {
@@ -1024,5 +1024,6 @@ func (app *App) ShardPutChangeNumberHandler(w http.ResponseWriter, r *http.Reque
 			log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
 		}
 	}
+
 	w.Write(body)
 }
