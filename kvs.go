@@ -195,15 +195,17 @@ func (k *KVS) Contains(key string) (bool, int) {
 		// Once the read lock has been obtained, call the non-locking contains() method
 		alive, version = k.contains(key)
 		return alive, version
-	} else {
-		//log.Println("key not in my shard, requesting id of another shard"+whoShard)
-		// g := Construct the GetRequest struct
-		// bobIP := getIP(whoShard)
-		// bobResp := sendContainsRequest(bobip, g)
-		// alive = bobResp.Alive
-		// version = bobResp.Version
-		// return alive, version
 	}
+	log.Println("key not in my shard, requesting id of another shard" + whoShard)
+	g := GetRequest{
+		Key:     key,
+		Payload: nil,
+	}
+	bobIP := getIP(whoShard)
+	bobResp := sendContainsRequest(bobip, g)
+	alive = bobResp.Alive
+	version = bobResp.Version
+
 	return alive, version
 }
 
@@ -232,33 +234,37 @@ func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[str
 		//Retrieving bob's IP
 		bobIP := getIP(whoShard)
 		//Sending the request and recieving bob's responce
-		bobResp := sendGetRequest(bobIP, GetSend)
-		val = bobResp.Key
+		bobResp, err := sendGetRequest(bobIP, GetSend)
+		if err != nil {
+			log.Println("Error with sendGetRequest", err)
+			panic(err)
+		}
+		val = bobResp.Value
 		clock = bobResp.Payload
 		return val, clock
-	} else {
-		// Grab a read lock
-		log.Println("Checking to see if db contains key ")
-		k.mutex.RLock()
-		defer k.mutex.RUnlock()
-
-		_, version := k.contains(key)
-
-		// Call the non-locking contains() method, use the version from above with default value 0
-		if version != 0 {
-			log.Println("Value found")
-
-			// Get the key and clock from the db
-			val = k.db[key].GetValue()
-			clock = k.db[key].GetClock()
-
-			// Add this key's causal history to the client's payload
-			clock = mergeClocks(payload, clock)
-
-			// Return
-			return val, clock
-		}
 	}
+	// Grab a read lock
+	log.Println("Checking to see if db contains key ")
+	k.mutex.RLock()
+	defer k.mutex.RUnlock()
+
+	_, version := k.contains(key)
+
+	// Call the non-locking contains() method, use the version from above with default value 0
+	if version != 0 {
+		log.Println("Value found")
+
+		// Get the key and clock from the db
+		val = k.db[key].GetValue()
+		clock = k.db[key].GetClock()
+
+		// Add this key's causal history to the client's payload
+		clock = mergeClocks(payload, clock)
+
+		// Return
+		return val, clock
+	}
+
 	log.Println("Value not found")
 	// We don't have the value so just return the empty string with the payload they sent us
 	return "", payload
@@ -283,7 +289,11 @@ func (k *KVS) Delete(key string, time time.Time, payload map[string]int) bool {
 		//Retrieving bob's IP
 		bobIP := getIP(whoShard)
 		//Sending the request and recieving bob's responce
-		bobResp, _ := sendDeleteRequest(bobIP, GetDelete)
+		bobResp, err := sendDeleteRequest(bobIP, GetDelete)
+		if err != nil {
+			log.Println("Error with sendDeleteRequest", err)
+			return false, err
+		}
 		return bobResp
 	}
 	// Grab a write lock
@@ -332,6 +342,10 @@ func (k *KVS) Put(key string, val string, time time.Time, payload map[string]int
 			bobIP := getIP(whoShard)
 			//Sending the request and recieving bob's responce
 			bobResp, _ := sendPutRequest(bobIP, GetDelete)
+			if err != nil {
+				log.Println("Error with sendPutRequest", err)
+				return false, err
+			}
 			return bobResp
 		}
 		log.Println("Key and value OK, inserting to DB")
