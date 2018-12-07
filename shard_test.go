@@ -11,6 +11,13 @@
 
 package main
 
+/*
+
+Pause the test_shard.go
+Take care of all shard.go and the NewShard first then come back.
+
+*/
+
 // func TestShardInitialStart(t *testing.T) {
 // 	s := NewShard(testMain, testView)
 // 	equals(t, 3, v.Count())

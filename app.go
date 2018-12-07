@@ -37,7 +37,7 @@ import (
 // App is a struct representing the externally-accessible state of the data store
 type App struct {
 	db    dbAccess
-	shard Shard
+	shard ShardList
 }
 
 // Initialize takes a Listener, assigns a Router to it, and then attaches HTTP handler
