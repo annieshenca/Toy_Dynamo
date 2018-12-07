@@ -86,7 +86,7 @@ func (g *GossipVals) GossipHeartbeat() {
 				gossipee = g.shardList.RandomGlobal(2)
 				// Propagate views
 				for _, bob := range gossipee {
-					sendShardGob(bob, g.shardList.GetShardGob())
+					sendShardGob(bob, g.shardList.GetShardGlob())
 				}
 			}
 			wakeGossip = false
@@ -180,6 +180,6 @@ func (g *GossipVals) ConflictResolution(key string, aliceEntry KeyEntry) bool {
 }
 
 // UpdateShardList overwrites our view of the shard list
-func (g *GossipVals) UpdateShardList(s ShardList) {
-	g.shardList.Overwrite(&s)
+func (g *GossipVals) UpdateShardList(s ShardGlob) {
+	g.shardList.Overwrite(s)
 }

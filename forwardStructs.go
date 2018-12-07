@@ -14,6 +14,11 @@ package main
 
 import "time"
 
+// ShardGlob contains the only really important information we need to transmit
+type ShardGlob struct {
+	ShardList map[string][]string
+}
+
 // TimeGlob is a map of keys to timestamps and lets the gossip module figure out which ones need to be updated
 type TimeGlob struct {
 	List map[string]time.Time

@@ -88,7 +88,7 @@ func main() {
 	// The gossip object controls communicating with other servers and has references to the viewlist and the kvs
 	gossip := GossipVals{
 		kvs:       k,
-		shardList: *MyShard,
+		shardList: MyShard,
 	}
 	// Start the heartbeat loop
 	go gossip.GossipHeartbeat() // goroutines

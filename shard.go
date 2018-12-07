@@ -12,13 +12,20 @@
 
 package main
 
+import (
+	"math/rand"
+	"strings"
+)
+
 // Shard interface defines the interactions with the shard system
 type Shard interface {
 	// Returns the number of elemetns in the shard map
 	Count() int
 
 	// Returns the number of elemetns in the shard map
-	Contains(string) bool
+	ContainsServer(string) bool
+
+	ContainsShard(string) bool
 
 	// Deletes a shard ID from the shard list
 	Remove(string) bool
@@ -42,10 +49,10 @@ type Shard interface {
 	RandomGlobal(int) []string
 
 	// Overwrite with a new view of the world
-	Overwrite(Shard)
+	Overwrite(ShardGlob)
 
-	// GetShardList returns a Shard object
-	GetShardList() Shard
+	// GetShardGlob returns a Shard object
+	GetShardGlob() ShardGlob
 }
 
 // ShardList is a struct which implements the Shard interface and holds shard ID system of servers
@@ -54,44 +61,126 @@ type ShardList struct {
 	ShardSlice   map[string][]string // this is a mapping of shard IDs to slices of server strings
 	PrimaryShard string              // This is the shard ID I belong in
 	PrimaryIP    string              // this is my IP
+	Tree         RBTree              // This is our red-black tree holding the shard positions on the ring
+	Size         int                 // total number of servers
+	NumShards    int                 // total number of shards
 }
 
-// GetShardList returns a ShardList
-func (s *ShardList) GetShardList() Shard {
-	return s
-
+// GetShardGlob returns a ShardGlob
+func (s *ShardList) GetShardGlob() ShardGlob {
+	if s != nil {
+		g := ShardGlob{ShardList: s.ShardSlice}
+		return g
+	}
+	return ShardGlob{}
 }
 
 // Overwrite overwrites our view of the world with another
-func (s *ShardList) Overwrite(shard Shard) {
-	// TODO fill this in
+func (s *ShardList) Overwrite(sg ShardGlob) {
+	// Remove our old view of the world
+	for k := range s.ShardSlice {
+		delete(s.ShardSlice, k)
+		delete(s.ShardString, k)
+		for _, i := range getVirtualNodePositions(k) {
+			s.Tree.delete(i)
+		}
+	}
+
+	// Write the new one
+	for k, v := range sg.ShardList {
+		// Directly transfer the slices over
+		s.ShardSlice[k] = v
+
+		// Join the slices to form the string
+		s.ShardString[k] = strings.Join(v, ",")
+
+		// Check which shard we're in
+		for i := range v {
+			if v[i] == s.PrimaryIP {
+				s.PrimaryShard = k
+			}
+		}
+
+		// rebuild the tree
+		for _, i := range getVirtualNodePositions(k) {
+			s.Tree.put(i, k)
+		}
+	}
+
 }
 
 // RandomGlobal returns a random selection of other servers from any shard
 func (s *ShardList) RandomGlobal(n int) []string {
-	// TODO fill this in
-	return []string{"hello"}
+	var t []string
+
+	if n > s.Size {
+		n = s.Size - 1
+	}
+
+	for k, v := range s.ShardSlice {
+		r := rand.Int() % len(v)
+		if v[r] == s.PrimaryIP {
+			continue
+		}
+		t = append(t, v[r])
+		if len(t) >= n {
+			break
+		}
+	}
+
+	return t
 }
 
 // RandomLocal returns a random selection of other servers from within our own shard
 func (s *ShardList) RandomLocal(n int) []string {
-	// TODO fill this in
-	return []string{"hello"}
+	var t []string
+
+	l := s.ShardSlice[s.PrimaryShard]
+	if n > len(l)-1 {
+		n = len(l) - 2
+	}
+
+	for len(t) < n {
+		r := rand.Int() % len(l)
+		if l[r] == s.PrimaryIP {
+			continue
+		}
+		t = append(t, l[r])
+		if len(t) >= n {
+			break
+		}
+	}
+
+	return t
 }
 
 // Count returns the number of elemetns in the shard map
 func (s *ShardList) Count() int {
 	if s != nil {
-		return len(s.ShardString)
+		return s.Size
 	}
 	return 0
 }
 
-// Contains returns true if the ShardList contains a given shardID
-func (s *ShardList) Contains(shardID string) bool {
+// ContainsShard returns true if the ShardList contains a given shardID
+func (s *ShardList) ContainsShard(shardID string) bool {
 	if s != nil {
 		_, ok := s.ShardSlice[shardID]
 		return ok
+	}
+	return false
+}
+
+// ContainsServer checks to see if the server exists
+func (s *ShardList) ContainsServer(ip string) bool {
+	if s != nil {
+		for k, v := range s.ShardSlice {
+			for _, i := range v {
+				if i == ip {
+					return true
+				}
+			}
+		}
 	}
 	return false
 }

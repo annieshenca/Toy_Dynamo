@@ -187,7 +187,7 @@ func (e *Endpoint) handleEntryGob(rw *bufio.ReadWriter) {
 }
 
 func (e *Endpoint) handleShardGob(rw *bufio.ReadWriter) {
-	var data ShardList
+	var data ShardGlob
 	dec := gob.NewDecoder(rw)
 	log.Println("Decoding viewGob data")
 	err := dec.Decode(&data)
@@ -409,7 +409,7 @@ func sendEntryGlob(ip string, eg EntryGlob) error {
 	return nil
 }
 
-func sendShardGob(ip string, s ShardList) error {
+func sendShardGob(ip string, s ShardGlob) error {
 	rw, err := Open(ip)
 	if err != nil {
 		return errors.Wrap(err, "Client: failed to open connection to "+ip)
@@ -656,5 +656,5 @@ func register() {
 	gob.Register(PutRequest{})
 	gob.Register(GetResponse{})
 	gob.Register(ContainsResponse{})
-	gob.Register(ShardList{})
+	gob.Register(ShardGlob{})
 }

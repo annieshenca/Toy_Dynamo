@@ -657,7 +657,7 @@ func (app *App) ViewPutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Check if the port you want to add new to our view
-	if !app.shard.Contains(newPort) {
+	if !app.shard.ContainsServer(newPort) {
 		log.Println("Port to be added is brand new to view: " + newPort)
 
 		// We do
@@ -742,7 +742,7 @@ func (app *App) ViewDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Check if the port you want to delete is in view
-	if app.shard.Contains(deletePort) {
+	if app.shard.ContainsServer(deletePort) {
 		log.Println("Port to be deleted found in view")
 
 		// We do
