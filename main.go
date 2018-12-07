@@ -31,6 +31,9 @@ var branch string // Git branch
 var hash string   // Shortened commit hash
 var build string  // Number of commits in the branch
 
+// MyShard is our shard system
+var MyShard *ShardList
+
 // MultiLogOutput controls logging output to stdout and to a log file
 var MultiLogOutput io.Writer
 
@@ -74,8 +77,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// Create a shardList and create the seperation of shard ID to servers
-	MyShard := NewShard(myIP, view, numshards)
+	// Create a ShardList and create the seperation of shard ID to servers
+	MyShard = NewShard(myIP, view, numshards)
 
 	// Make a KVS to use as the db
 	k := NewKVS()
@@ -88,7 +91,7 @@ func main() {
 	// The gossip object controls communicating with other servers and has references to the viewlist and the kvs
 	gossip := GossipVals{
 		kvs:       k,
-		shardList: MyShard,
+		ShardList: MyShard,
 	}
 	// Start the heartbeat loop
 	go gossip.GossipHeartbeat() // goroutines

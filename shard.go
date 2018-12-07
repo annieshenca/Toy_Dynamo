@@ -49,6 +49,9 @@ type Shard interface {
 	// Return a random number of elements from the global view
 	RandomGlobal(int) []string
 
+	// FindBob returns a random element of a particular shard
+	FindBob(string) string
+
 	// Overwrite with a new view of the world
 	Overwrite(ShardGlob)
 
@@ -65,6 +68,15 @@ type ShardList struct {
 	Tree         RBTree              // This is our red-black tree holding the shard positions on the ring
 	Size         int                 // total number of servers
 	NumShards    int                 // total number of shards
+}
+
+// FindBob returns a random element of the chosen shard
+func (s *ShardList) FindBob(shard string) string {
+	r := rand.Int()
+	l := s.ShardSlice[shard]
+	i := r % len(l)
+	bob := l[i]
+	return bob
 }
 
 // GetShardGlob returns a ShardGlob
@@ -226,7 +238,7 @@ func (s *ShardList) GetIP() string {
 // NumLeftoverServers returns the number of leftover servers after an uneven spread
 func (s *ShardList) NumLeftoverServers() int {
 	if s != nil {
-		return floor(size % numShards)
+		return s.Size % s.NumShards
 	}
 	return -1
 }
@@ -234,7 +246,7 @@ func (s *ShardList) NumLeftoverServers() int {
 // NumServerPerShard returns number of servers per shard (equally) after reshuffle
 func (s *ShardList) NumServerPerShard() int {
 	if s != nil {
-		i := size / numShards
+		i := s.Size / s.NumShards
 		if i >= 2 {
 			return i
 		}
@@ -243,18 +255,9 @@ func (s *ShardList) NumServerPerShard() int {
 	return -1
 }
 
-// IdealShardNum returns the ideal number of shards in current system
-// Returns -1 and the caller function should persent an error response to client
-func (s *shardList) IdealShardNum() int {
-	// This happens when Client issues a change that cause of a shard contains only 1 server
-	if serverPerShard < 2 {
-		return -1
-	}
-
-}
-
 // NewShard creates a shardlist object and initializes it with the input string
 func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
+	// init fields
 	shardSlice := make(map[string][]string)
 	shardString := make(map[string]string)
 	rbtree := RBTree{}
@@ -266,8 +269,45 @@ func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
 		PrimaryIP:   primaryIP,
 	}
 
+	// take the view and split it into individual server IPs
 	sp := strings.Split(globalView, ",")
-	sorted := sort.Strings(sp)
 
-	return &ShardList{}
+	// sort them
+	sort.Strings(sp)
+
+	// take our list of shard names and sort it
+	sort.Strings(shardNames)
+
+	// iterate over the servers
+	for i := 0; i < len(sp); i++ {
+		// index them into the map, mod the number of shards
+		shardIndex := i % numShards
+
+		// the shard id is the index into the name list
+		name := shardNames[shardIndex]
+
+		// append them to the list
+		s.ShardSlice[name] = append(s.ShardSlice[name], sp[i])
+
+		// check if this particular server is us and assign our shard id
+		if sp[i] == s.PrimaryIP {
+			s.PrimaryShard = name
+		}
+	}
+
+	// now insert them into the joined version
+	for k, v := range s.ShardSlice {
+		s.ShardString[k] = strings.Join(v, ",")
+	}
+
+	// build the red black tree
+	var tree RBTree
+
+	for k := range s.ShardSlice {
+		for _, i := range getVirtualNodePositions(k) {
+			tree.put(i, k)
+		}
+	}
+
+	return &s
 }
