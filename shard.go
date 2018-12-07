@@ -12,12 +12,21 @@
 
 package main
 
+import (
+	"math/rand"
+	"sort"
+	"strings"
+)
+
+// Shard interface defines the interactions with the shard system
 type Shard interface {
 	// Returns the number of elemetns in the shard map
 	Count() int
 
 	// Returns the number of elemetns in the shard map
-	Contains(string) bool
+	ContainsServer(string) bool
+
+	ContainsShard(string) bool
 
 	// Deletes a shard ID from the shard list
 	Remove(string) bool
@@ -26,62 +35,162 @@ type Shard interface {
 	Add(string) bool
 
 	// Returns the actual shard ID I am in
-	Primary() string
+	PrimaryID() string
+
+	// Return our IP
+	GetIP() string
 
 	// Converts the shard IDs and servers in the ID into a comma-separated string
 	String() string
+
+	// Return a random number of elements from the local view
+	RandomLocal(int) []string
+
+	// Return a random number of elements from the global view
+	RandomGlobal(int) []string
+
+	// Overwrite with a new view of the world
+	Overwrite(ShardGlob)
+
+	// GetShardGlob returns a Shard object
+	GetShardGlob() ShardGlob
 }
 
-// A shardList is a struct which implements the Shard interface and holds shard ID system of servers
-/* The formate of ShardList structure:
-ShardList: {
-    shardSlices: {
-        A: ["192.168.0.10:8081", "192.168.0.10:8082"],
-        B: ["192.168.0.10:8083", "192.168.0.10:8084"],
-    },
-    shardStrings: {
-        A: "192.168.0.10:8081,192.168.0.10:8082",
-        B: "192.168.0.10:8083,192.168.0.10:8084",
-    },
-    primaryShard: "A",
-    primaryIP: "192.168.0.10:8081",
-}*/
-type shardList struct {
-	shardSlices   map[string][]string // Map of Shard IDs to server IPports in Slice form
-	shardStrings  map[string]string   // Map of Shard IDs to server IPports in String form
-	primaryShard  string              // The Shard ID I belong in
-	primaryIPport string              // My IPport
+// ShardList is a struct which implements the Shard interface and holds shard ID system of servers
+type ShardList struct {
+	ShardString  map[string]string   // This is the map of shard IDs to server names
+	ShardSlice   map[string][]string // this is a mapping of shard IDs to slices of server strings
+	PrimaryShard string              // This is the shard ID I belong in
+	PrimaryIP    string              // this is my IP
+	Tree         RBTree              // This is our red-black tree holding the shard positions on the ring
+	Size         int                 // total number of servers
+	NumShards    int                 // total number of shards
+}
+
+// GetShardGlob returns a ShardGlob
+func (s *ShardList) GetShardGlob() ShardGlob {
+	if s != nil {
+		g := ShardGlob{ShardList: s.ShardSlice}
+		return g
+	}
+	return ShardGlob{}
+}
+
+// Overwrite overwrites our view of the world with another
+func (s *ShardList) Overwrite(sg ShardGlob) {
+	// Remove our old view of the world
+	for k := range s.ShardSlice {
+		delete(s.ShardSlice, k)
+		delete(s.ShardString, k)
+		for _, i := range getVirtualNodePositions(k) {
+			s.Tree.delete(i)
+		}
+	}
+
+	// Write the new one
+	for k, v := range sg.ShardList {
+		// Directly transfer the slices over
+		s.ShardSlice[k] = v
+
+		// Join the slices to form the string
+		s.ShardString[k] = strings.Join(v, ",")
+
+		// Check which shard we're in
+		for i := range v {
+			if v[i] == s.PrimaryIP {
+				s.PrimaryShard = k
+			}
+		}
+
+		// rebuild the tree
+		for _, i := range getVirtualNodePositions(k) {
+			s.Tree.put(i, k)
+		}
+	}
+
+}
+
+// RandomGlobal returns a random selection of other servers from any shard
+func (s *ShardList) RandomGlobal(n int) []string {
+	var t []string
+
+	if n > s.Size {
+		n = s.Size - 1
+	}
+
+	for _, v := range s.ShardSlice {
+		r := rand.Int() % len(v)
+		if v[r] == s.PrimaryIP {
+			continue
+		}
+		t = append(t, v[r])
+		if len(t) >= n {
+			break
+		}
+	}
+
+	return t
+}
+
+// RandomLocal returns a random selection of other servers from within our own shard
+func (s *ShardList) RandomLocal(n int) []string {
+	var t []string
+
+	l := s.ShardSlice[s.PrimaryShard]
+	if n > len(l)-1 {
+		n = len(l) - 2
+	}
+
+	for len(t) < n {
+		r := rand.Int() % len(l)
+		if l[r] == s.PrimaryIP {
+			continue
+		}
+		t = append(t, l[r])
+		if len(t) >= n {
+			break
+		}
+	}
+
+	return t
 }
 
 // Count returns the number of elemetns in the shard map
-func (s *shardList) CountShardID() int {
+func (s *ShardList) Count() int {
 	if s != nil {
-		return len(s.shardSlices)
+		return s.Size
 	}
 	return 0
 }
 
-// func (s *shardList) CountIPports() int {
-// 	if s != nil {
-// 		return len(s.shardSlices)
-// 	}
-// 	return 0
-// }
-
-// Contains returns true if the shardList contains a given shardID
-func (s *shardList) Contains(shardID string) bool {
+// ContainsShard returns true if the ShardList contains a given shardID
+func (s *ShardList) ContainsShard(shardID string) bool {
 	if s != nil {
-		_, ok := s.shardSlices[shardID]
+		_, ok := s.ShardSlice[shardID]
 		return ok
 	}
 	return false
 }
 
-// Remove deletes a shard ID from the shard list
-func (s *shardList) Remove(shardID string) bool {
+// ContainsServer checks to see if the server exists
+func (s *ShardList) ContainsServer(ip string) bool {
 	if s != nil {
-		// TODO: need to create function for modifying shardID and servers when changes happen
-		// delete(s.shards, shardID)
+		for _, v := range s.ShardSlice {
+			for _, i := range v {
+				if i == ip {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// Remove deletes a shard ID from the shard list
+func (s *ShardList) Remove(shardID string) bool {
+	if s != nil {
+		// TODO we need to also move the servers and stuff
+		delete(s.ShardSlice, shardID)
 		shardChange = true
 		return true
 	}
@@ -89,7 +198,7 @@ func (s *shardList) Remove(shardID string) bool {
 }
 
 // Add inserts an shard ID into the shard list
-func (s *shardList) Add(shardID string) bool {
+func (s *ShardList) Add(shardID string) bool {
 	if s != nil {
 		// s.shards[shardID] = shardID
 		shardChange = true
@@ -98,24 +207,24 @@ func (s *shardList) Add(shardID string) bool {
 	return false
 }
 
-// Primary returns the actual shard ID I am in
-func (s *shardList) PrimaryIPport() string {
+// PrimaryID returns the actual shard ID I am in
+func (s *ShardList) PrimaryID() string {
 	if s != nil {
-		return s.primaryIPport
+		return s.PrimaryShard
 	}
 	return ""
 }
 
-// Primary returns the actual shard ID I am in
-func (s *shardList) PrimaryShardID() string {
+// GetIP returns my IP
+func (s *ShardList) GetIP() string {
 	if s != nil {
-		return s.primaryShard
+		return s.PrimaryIP
 	}
 	return ""
 }
 
 // String converts the shard IDs and servers in the ID into a comma-separated string
-func (s *shardList) String() string {
+func (s *ShardList) String() string {
 	if s != nil {
 		// var items []string
 		// for _, k := range v.views {
@@ -146,7 +255,25 @@ func (s *shardList) String() string {
 // }
 
 // NewShard creates a shardlist object and initializes it with the input string
-// func NewShard(main string, input *viewList, numshards int) *shardList {
+func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
+	shardSlice := make(map[string][]string)
+	shardString := make(map[string]string)
+	rbtree := RBTree{}
+	s := ShardList{
+		ShardSlice:  shardSlice,
+		ShardString: shardString,
+		Tree:        rbtree,
+		NumShards:   numShards,
+		PrimaryIP:   primaryIP,
+	}
+
+	sp := strings.Split(globalView, ",")
+	sorted := sort.Strings(sp)
+
+	return &ShardList{}
+}
+
+// func NewShard(main string, input *viewList, numshards int) *ShardList {
 // 	// // Make a new map
 // 	s := make(map[string]string)
 
@@ -158,7 +285,7 @@ func (s *shardList) String() string {
 // 	// 	v[s] = s
 // 	// }
 
-// 	list := shardList{
+// 	list := ShardList{
 // 		views:   s,
 // 		primary: main,
 // 	}

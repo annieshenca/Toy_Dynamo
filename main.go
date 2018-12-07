@@ -55,9 +55,15 @@ func main() {
 
 	log.Println("My IP is " + myIP)
 
+	// docker run -p 8082:8080
+	// --net=mynetwork
+	// --ip=192.168.0.2
+	// -e VIEW="192.168.0.2:8080,192.168.0.3:8080,192.168.0.4:8080,192.168.0.5:8080"
+	// -e IP_PORT="192.168.0.2:8080" -e S=”2” testing
+
 	// VIEW is defined at runtime in the docker command as a string
-	str := os.Getenv("VIEW")
-	log.Println("My view is: " + str)
+	view := os.Getenv("VIEW")
+	log.Println("My view is: " + view)
 
 	// Store s as the number of shards from env
 	// docker run -p 8082:8080 --net=mynet --ip=10.0.0.2 -e VIEW="10.0.0.2:8080,10.0.0.3:8080,10.0.0.4:8080" -e IP_PORT="10.0.0.2:8080" -e S="3" REPLICA_1
@@ -68,25 +74,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// Create a viewList and load the view into it
-	MyView := NewView(myIP, str)
-
 	// Create a shardList and create the seperation of shard ID to servers
-	// MyShard := NewShard(myIP, MyView, numshards)
+	MyShard := NewShard(myIP, view, numshards)
 
 	// Make a KVS to use as the db
 	k := NewKVS()
 
 	// The App object is the front end and has references to the KVS and viewList
-	a := App{db: k, view: *MyView, shard: *MyShard}
+	a := App{db: k, shard: MyShard}
 
 	log.Println("Starting server...")
 
 	// The gossip object controls communicating with other servers and has references to the viewlist and the kvs
 	gossip := GossipVals{
-		view: MyView,
-		kvs:  k,
+		kvs:       k,
+		shardList: MyShard,
 	}
 	// Start the heartbeat loop
 	go gossip.GossipHeartbeat() // goroutines

@@ -428,7 +428,7 @@ func (k *KVS) OverwriteEntry(key string, entry KeyEntry) {
 }
 
 // GetTimeGlob returns a struct containing a map of keys to their timestamps
-func (k *KVS) GetTimeGlob() timeGlob {
+func (k *KVS) GetTimeGlob() TimeGlob {
 	if k != nil {
 		k.mutex.RLock()
 		defer k.mutex.RUnlock()
@@ -438,20 +438,20 @@ func (k *KVS) GetTimeGlob() timeGlob {
 				m[key] = v.GetTimestamp()
 			}
 		}
-		g := timeGlob{List: m}
+		g := TimeGlob{List: m}
 
 		return g
 	}
-	return timeGlob{}
+	return TimeGlob{}
 }
 
 // GetEntryGlob returns a struct containing a map of keys to their entries
-func (k *KVS) GetEntryGlob(tg timeGlob) entryGlob {
+func (k *KVS) GetEntryGlob(tg TimeGlob) EntryGlob {
 	if k != nil {
 		k.mutex.RLock()
 		defer k.mutex.RUnlock()
 		entries := make(map[string]Entry)
-		eg := entryGlob{Keys: entries}
+		eg := EntryGlob{Keys: entries}
 		for n := range tg.List {
 			time := k.db[n].GetTimestamp()
 			clock := k.db[n].GetClock()
@@ -467,8 +467,8 @@ func (k *KVS) GetEntryGlob(tg timeGlob) entryGlob {
 			}
 			eg.Keys[n] = e
 		}
-		log.Println("Built entryGlob: ", eg)
+		log.Println("Built EntryGlob: ", eg)
 		return eg
 	}
-	return entryGlob{Keys: map[string]Entry{}}
+	return EntryGlob{Keys: map[string]Entry{}}
 }
