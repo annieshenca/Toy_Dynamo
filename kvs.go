@@ -219,7 +219,7 @@ func (k *KVS) contains(key string) (bool, int) {
 }
 
 // Get returns the value associated with a particular key. If the key does not exist it returns ""
-func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[string]int) {
+func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[string]int, owner string) {
 	log.Println("Getting value associated with key ")
 	//Get the key position
 	whoShard := r.successor(getKeyPosition(key))
@@ -241,7 +241,7 @@ func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[str
 		}
 		val = bobResp.Value
 		clock = bobResp.Payload
-		return val, clock
+		return val, clock, owner
 	}
 	// Grab a read lock
 	log.Println("Checking to see if db contains key ")
@@ -262,12 +262,13 @@ func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[str
 		clock = mergeClocks(payload, clock)
 
 		// Return
-		return val, clock
+		return val, clock, owner
 	}
 
 	log.Println("Value not found")
 	// We don't have the value so just return the empty string with the payload they sent us
-	return "", payload
+	// We aslo dont return the owner
+	return "", payload, ""
 }
 
 // Delete sets the tombstone associated with a particular key, updates its version and timestamp, so it appears dead
