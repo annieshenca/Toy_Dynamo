@@ -43,6 +43,9 @@ type Shard interface {
 
 	// Overwrite with a new view of the world
 	Overwrite(Shard)
+
+	// GetShardList returns a Shard object
+	GetShardList() Shard
 }
 
 // ShardList is a struct which implements the Shard interface and holds shard ID system of servers
@@ -51,6 +54,12 @@ type ShardList struct {
 	ShardSlice   map[string][]string // this is a mapping of shard IDs to slices of server strings
 	PrimaryShard string              // This is the shard ID I belong in
 	PrimaryIP    string              // this is my IP
+}
+
+// GetShardList returns a ShardList
+func (s *ShardList) GetShardList() Shard {
+	return s
+
 }
 
 // Overwrite overwrites our view of the world with another

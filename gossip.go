@@ -21,7 +21,7 @@ import (
 // GossipVals is a struct which implements the Gossip
 type GossipVals struct {
 	kvs       dbAccess
-	shardList ShardList
+	shardList Shard
 }
 
 // Global variable for easier time tracking
@@ -86,7 +86,7 @@ func (g *GossipVals) GossipHeartbeat() {
 				gossipee = g.shardList.RandomGlobal(2)
 				// Propagate views
 				for _, bob := range gossipee {
-					sendShardGob(bob, g.shardList)
+					sendShardGob(bob, g.shardList.GetShardGob())
 				}
 			}
 			wakeGossip = false
