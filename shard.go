@@ -146,7 +146,7 @@ func (s *ShardList) String() string {
 }
 
 // NewShard creates a shardlist object and initializes it with the input string
-func NewShard(s string, i int) *ShardList {
+func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
 	return &ShardList{}
 }
 

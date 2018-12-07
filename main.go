@@ -62,8 +62,8 @@ func main() {
 	// -e IP_PORT="192.168.0.2:8080" -e S=”2” testing
 
 	// VIEW is defined at runtime in the docker command as a string
-	str := os.Getenv("VIEW")
-	log.Println("My view is: " + str)
+	view := os.Getenv("VIEW")
+	log.Println("My view is: " + view)
 
 	// Store s as the number of shards from env
 	// docker run -p 8082:8080 --net=mynet --ip=10.0.0.2 -e VIEW="10.0.0.2:8080,10.0.0.3:8080,10.0.0.4:8080" -e IP_PORT="10.0.0.2:8080" -e S="3" REPLICA_1
@@ -74,9 +74,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	// Create a shardList and create the seperation of shard ID to servers
-	MyShard := NewShard(myIP, numshards)
+	MyShard := NewShard(myIP, view, numshards)
 
 	// Make a KVS to use as the db
 	k := NewKVS()

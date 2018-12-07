@@ -20,7 +20,6 @@ import (
 
 // GossipVals is a struct which implements the Gossip
 type GossipVals struct {
-	view      View
 	kvs       dbAccess
 	shardList ShardList
 }
