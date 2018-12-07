@@ -197,7 +197,7 @@ func (e *Endpoint) handleShardGob(rw *bufio.ReadWriter) {
 	}
 
 	log.Println("Updating ShardList - old views: " + e.gossip.shardList.String())
-	e.gossip.UpdateShards(data)
+	e.gossip.UpdateShardList(data)
 	log.Println("Shards updated: ", data)
 }
 
@@ -649,8 +649,8 @@ func addHandlers(e *Endpoint) {
 
 func register() {
 	// Register types for gob
-	gob.Register(timeGlob{})
-	gob.Register(entryGlob{})
+	gob.Register(TimeGlob{})
+	gob.Register(EntryGlob{})
 	gob.Register(Entry{})
 	gob.Register(GetRequest{})
 	gob.Register(PutRequest{})

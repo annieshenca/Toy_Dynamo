@@ -20,9 +20,9 @@ import (
 
 // GossipVals is a struct which implements the Gossip
 type GossipVals struct {
-	view View
-	kvs  dbAccess
-	// tcp?
+	view      View
+	kvs       dbAccess
+	shardList ShardList
 }
 
 // Global variable for easier time tracking
@@ -55,7 +55,7 @@ func (g *GossipVals) GossipHeartbeat() {
 		if wakeGossip || shardChange || timesUp() {
 			log.Println("Gossip initiated. Ringing TCP")
 
-			gossipee := g.shardList.RandomInShard(2)
+			gossipee := g.shardList.RandomLocal(2)
 
 			if needHelp {
 				for _, bob := range gossipee {
@@ -83,11 +83,11 @@ func (g *GossipVals) GossipHeartbeat() {
 				}
 
 			}
-			if viewChange {
+			if shardChange {
 				gossipee = g.shardList.RandomGlobal(2)
 				// Propagate views
-				for bob := range gossipee {
-					sendShardGob(bob, MyShard)
+				for _, bob := range gossipee {
+					sendShardGob(bob, g.shardList)
 				}
 			}
 			wakeGossip = false
@@ -182,7 +182,5 @@ func (g *GossipVals) ConflictResolution(key string, aliceEntry KeyEntry) bool {
 
 // UpdateShardList overwrites our view of the shard list
 func (g *GossipVals) UpdateShardList(s ShardList) {
-	if s != nil {
-		g.shardList.Overwrite(s)
-	}
+	g.shardList.Overwrite(&s)
 }
