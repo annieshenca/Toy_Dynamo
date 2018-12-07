@@ -37,6 +37,7 @@ const (
 	invalidVal   = ""
 	testView     = "176.32.164.10:8082,176.32.164.10:8083,176.32.164.10:8084"
 	testMain     = "176.32.164.10:8082"
+	// testShard	 =
 	viewExist    = "176.32.164.10:8083"
 	viewNotExist = "176.32.164.10:8085"
 	invalidKey   = `Lorem ipsum dolor sit amet, 

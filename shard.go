@@ -33,23 +33,45 @@ type Shard interface {
 }
 
 // A shardList is a struct which implements the Shard interface and holds shard ID system of servers
+/* The formate of ShardList structure:
+ShardList: {
+    shardSlices: {
+        A: ["192.168.0.10:8081", "192.168.0.10:8082"],
+        B: ["192.168.0.10:8083", "192.168.0.10:8084"],
+    },
+    shardStrings: {
+        A: "192.168.0.10:8081,192.168.0.10:8082",
+        B: "192.168.0.10:8083,192.168.0.10:8084",
+    },
+    primaryShard: "A",
+    primaryIP: "192.168.0.10:8081",
+}*/
 type shardList struct {
-	shards  map[string]string // This is the map of shard IDs to server names
-	primary string            // This is the shard ID I belong in
+	shardSlices   map[string][]string // Map of Shard IDs to server IPports in Slice form
+	shardStrings  map[string]string   // Map of Shard IDs to server IPports in String form
+	primaryShard  string              // The Shard ID I belong in
+	primaryIPport string              // My IPport
 }
 
 // Count returns the number of elemetns in the shard map
-func (s *shardList) Count() int {
+func (s *shardList) CountShardID() int {
 	if s != nil {
-		return len(s.shards)
+		return len(s.shardSlices)
 	}
 	return 0
 }
 
+// func (s *shardList) CountIPports() int {
+// 	if s != nil {
+// 		return len(s.shardSlices)
+// 	}
+// 	return 0
+// }
+
 // Contains returns true if the shardList contains a given shardID
 func (s *shardList) Contains(shardID string) bool {
 	if s != nil {
-		_, ok := s.shards[shardID]
+		_, ok := s.shardSlices[shardID]
 		return ok
 	}
 	return false
@@ -58,7 +80,8 @@ func (s *shardList) Contains(shardID string) bool {
 // Remove deletes a shard ID from the shard list
 func (s *shardList) Remove(shardID string) bool {
 	if s != nil {
-		delete(s.shards, shardID)
+		// TODO: need to create function for modifying shardID and servers when changes happen
+		// delete(s.shards, shardID)
 		shardChange = true
 		return true
 	}
@@ -76,9 +99,17 @@ func (s *shardList) Add(shardID string) bool {
 }
 
 // Primary returns the actual shard ID I am in
-func (s *shardList) Primary() string {
+func (s *shardList) PrimaryIPport() string {
 	if s != nil {
-		return s.primary
+		return s.primaryIPport
+	}
+	return ""
+}
+
+// Primary returns the actual shard ID I am in
+func (s *shardList) PrimaryShardID() string {
+	if s != nil {
+		return s.primaryShard
 	}
 	return ""
 }
@@ -104,6 +135,16 @@ func (s *shardList) String() string {
 	return ""
 }
 
+// IdealShardNum
+// func (s *shardList) IdealShardNum() int {
+
+// }
+
+// func (s *shardList) Random(n int) []string {
+// }
+// func (s *shardList) RecalculateShard() {
+// }
+
 // NewShard creates a shardlist object and initializes it with the input string
 // func NewShard(main string, input *viewList, numshards int) *shardList {
 // 	// // Make a new map
@@ -122,9 +163,4 @@ func (s *shardList) String() string {
 // 		primary: main,
 // 	}
 // 	return &list
-// }
-
-// func (s *shardList) Random(n int) []string {
-// }
-// func (s *shardList) RecalculateShard() {
 // }
