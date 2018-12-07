@@ -223,36 +223,35 @@ func (s *ShardList) GetIP() string {
 	return ""
 }
 
-// String converts the shard IDs and servers in the ID into a comma-separated string
-func (s *ShardList) String() string {
+// NumLeftoverServers returns the number of leftover servers after an uneven spread
+func (s *ShardList) NumLeftoverServers() int {
 	if s != nil {
-		// var items []string
-		// for _, k := range v.views {
-		// 	items = append(items, k)
-		// }
-		// sort.Strings(items)
-		// str := ""
-		// i := len(items)
-		// j := 0
-		// for ; j < i-1; j++ {
-		// 	str = str + items[j] + ","
-		// }
-		// str = str + items[j]
-		// return str
-		return "hi"
+		return floor(size % numShards)
 	}
-	return ""
+	return -1
 }
 
-// IdealShardNum
-// func (s *shardList) IdealShardNum() int {
+// NumServerPerShard returns number of servers per shard (equally) after reshuffle
+func (s *ShardList) NumServerPerShard() int {
+	if s != nil {
+		i := size / numShards
+		if i > 2 {
+			return i
+		}
+	}
+	// The caller function needs to send response to client. Insufficent shard number!!
+	return -1
+}
 
-// }
+// IdealShardNum returns the ideal number of shards in current system
+// Returns -1 and the caller function should persent an error response to client
+func (s *shardList) IdealShardNum() int {
+	// This happens when Client issues a change that cause of a shard contains only 1 server
+	if serverPerShard < 2 {
+		return -1
+	}
 
-// func (s *shardList) Random(n int) []string {
-// }
-// func (s *shardList) RecalculateShard() {
-// }
+}
 
 // NewShard creates a shardlist object and initializes it with the input string
 func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
@@ -272,22 +271,3 @@ func NewShard(primaryIP string, globalView string, numShards int) *ShardList {
 
 	return &ShardList{}
 }
-
-// func NewShard(main string, input *viewList, numshards int) *ShardList {
-// 	// // Make a new map
-// 	s := make(map[string]string)
-
-// 	// // Convert the input string into a slice
-// 	// slice := strings.Split(input, ",")
-
-// 	// // Insert each element of the slice into the map
-// 	// for _, s := range slice {
-// 	// 	v[s] = s
-// 	// }
-
-// 	list := ShardList{
-// 		views:   s,
-// 		primary: main,
-// 	}
-// 	return &list
-// }
