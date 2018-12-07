@@ -84,7 +84,7 @@ func main() {
 	k := NewKVS()
 
 	// The App object is the front end and has references to the KVS and viewList
-	a := App{db: k, shard: MyShard}
+	a := App{db: k, shard: *MyShard}
 
 	log.Println("Starting server...")
 
