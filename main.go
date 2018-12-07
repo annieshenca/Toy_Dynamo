@@ -54,6 +54,12 @@ func main() {
 
 	log.Println("My IP is " + myIP)
 
+	// docker run -p 8082:8080
+	// --net=mynetwork
+	// --ip=192.168.0.2
+	// -e VIEW="192.168.0.2:8080,192.168.0.3:8080,192.168.0.4:8080,192.168.0.5:8080"
+	// -e IP_PORT="192.168.0.2:8080" -e S=”2” testing
+
 	// VIEW is defined at runtime in the docker command as a string
 	str := os.Getenv("VIEW")
 	log.Println("My view is: " + str)
