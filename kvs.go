@@ -185,11 +185,25 @@ func NewKVS() *KVS {
 func (k *KVS) Contains(key string) (bool, int) {
 	log.Println("Checking to see if db contains key ")
 	// Grab a read lock
-	k.mutex.RLock()
-	defer k.mutex.RUnlock()
+	alive := false
+	version := 0
+	whoShard := r.successor(getKeyPosition(key))
+	if whoShard == MyShard.primary() {
+		k.mutex.RLock()
+		defer k.mutex.RUnlock()
 
-	// Once the read lock has been obtained, call the non-locking contains() method
-	alive, version := k.contains(key)
+		// Once the read lock has been obtained, call the non-locking contains() method
+		alive, version = k.contains(key)
+		return alive, version
+	} else {
+		//log.Println("key not in my shard, requesting id of another shard"+whoShard)
+		// g := Construct the GetRequest struct
+		// bobIP := getIP(whoShard)
+		// bobResp := sendContainsRequest(bobip, g)
+		// alive = bobResp.Alive
+		// version = bobResp.Version
+		// return alive, version
+	}
 	return alive, version
 }
 
@@ -205,28 +219,47 @@ func (k *KVS) contains(key string) (bool, int) {
 // Get returns the value associated with a particular key. If the key does not exist it returns ""
 func (k *KVS) Get(key string, payload map[string]int) (val string, clock map[string]int) {
 	log.Println("Getting value associated with key ")
-	// Grab a read lock
-	k.mutex.RLock()
-	defer k.mutex.RUnlock()
-
-	_, version := k.contains(key)
-
-	// Call the non-locking contains() method, use the version from above with default value 0
-	if version != 0 {
-		log.Println("Value found")
-
-		// Get the key and clock from the db
-		val = k.db[key].GetValue()
-		clock = k.db[key].GetClock()
-
-		// Add this key's causal history to the client's payload
-		clock = mergeClocks(payload, clock)
-
-		// Return
+	//Get the key position
+	whoShard := r.successor(getKeyPosition(key))
+	//If it isnt my key then I need to ask the server who it belongs to
+	if whoShard != MyShard.primary() {
+		log.Println("key not in my shard, requesting id of another shard" + whoShard)
+		//Constructing the GetRequest Struct
+		GetSend := GetRequest{
+			Key:     key,
+			Payload: payload,
+		}
+		//Retrieving bob's IP
+		bobIP := getIP(whoShard)
+		//Sending the request and recieving bob's responce
+		bobResp := sendGetRequest(bobIP, GetSend)
+		val = bobResp.Key
+		clock = bobResp.Payload
 		return val, clock
+	} else {
+		// Grab a read lock
+		log.Println("Checking to see if db contains key ")
+		k.mutex.RLock()
+		defer k.mutex.RUnlock()
+
+		_, version := k.contains(key)
+
+		// Call the non-locking contains() method, use the version from above with default value 0
+		if version != 0 {
+			log.Println("Value found")
+
+			// Get the key and clock from the db
+			val = k.db[key].GetValue()
+			clock = k.db[key].GetClock()
+
+			// Add this key's causal history to the client's payload
+			clock = mergeClocks(payload, clock)
+
+			// Return
+			return val, clock
+		}
 	}
 	log.Println("Value not found")
-
 	// We don't have the value so just return the empty string with the payload they sent us
 	return "", payload
 }
