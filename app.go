@@ -846,8 +846,6 @@ func (app *App) ShardGetMembersHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling GET members request")
 
 	// Read the key from the URL using Gorilla Mux URL parsing.
-	vars := mux.Vars(r)
-	key := vars["subject"]
 
 	// Declare some variables here and define them below.
 	var body []byte    // Response body
