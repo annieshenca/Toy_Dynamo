@@ -61,7 +61,7 @@ func (app *App) Initialize(l net.Listener) {
 
 	// Thse handlers implement the /shard endpoint and handle GET, PUT
 	r.HandleFunc(shard+changeNum, app.ShardPutDiffShardNumHandler).Methods(http.MethodPut)
-	r.HandleFunc(shard+myID, app.ShardGetMyIdHandler).Methods(http.MethodGet)
+	r.HandleFunc(shard+myID, app.ShardGetMyIDHandler).Methods(http.MethodGet)
 	r.HandleFunc(shard+allID, app.ShardGetAllHandler).Methods(http.MethodGet)
 	r.HandleFunc(shard+members, app.ShardGetMembersHandler).Methods(http.MethodGet)
 	r.HandleFunc(shard+count, app.ShardGetNumKeysHandler).Methods(http.MethodGet)
@@ -789,8 +789,8 @@ func (app *App) ViewDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-//ShardGetMyIdHandler returns my current shard id
-func (app *App) ShardGetMyIdHandler(w http.ResponseWriter, r *http.Request) {
+//ShardGetMyIDHandler returns my current shard id
+func (app *App) ShardGetMyIDHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling /shard GET request")
 
 	// Declare some vars
@@ -827,11 +827,11 @@ func (app *App) ShardGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK) // code 200
 
-	members = GetAllIds() // will be written later
+	members = MyShard.GetAllShards()
 
 	// Package it into a map->JSON->[]byte
 	resp := map[string]interface{}{
-		"id": members,
+		"shard_ids": members,
 	}
 	body, err = json.Marshal(resp)
 	if err != nil {
@@ -903,8 +903,8 @@ func (app *App) ShardGetMembersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
+// ShardGetNumKeysHandler blah blah
 func (app *App) ShardGetNumKeysHandler(w http.ResponseWriter, r *http.Request) {
-	var members string // comma separated servers
 	var invalid bool
 	var numKeys int
 	var shardID string
@@ -927,7 +927,10 @@ func (app *App) ShardGetNumKeysHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	numKeys = len(k.db)
+	numKeys = app.db.Size()
+
+	var body []byte
+	var err error
 
 	if invalid {
 		log.Println("Shard is invalid")
@@ -957,6 +960,7 @@ func (app *App) ShardGetNumKeysHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
 		}
 	}
+	w.Write(body)
 }
 
 func (app *App) ShardPutDiffShardNumHandler(w http.ResponseWriter, r *http.Request) {
