@@ -814,70 +814,23 @@ func (app *App) ShardGetMyIdHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-// ShardGetHandler returns the container's shard id
+// ShardGetHandler returns all current shard id's
 func (app *App) ShardGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling /shard GET request")
 
 	// Declare some vars
 	var body []byte
 	var err error
-	var str string
+	var members string
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) // code 200
+	w.WriteHeader(http.StatusOK) // code 200	
 
-	// not sure how to tell the diff between my_ids and all_ids
-
-	// returns the shard I am in
-	container_id := PrimaryID()
+	members := GetAllIds() // will be written later
 
 	// Package it into a map->JSON->[]byte
 	resp := map[string]interface{}{
-		"id": str,
-	}
-	body, err = json.Marshal(resp)
-	if err != nil {
-		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
-	}
-	w.Write(body)
-}
-
-// ShardGetHandler returns all of the shard id's
-func (app *App) ShardGetAllHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Handling /shard GET all shard id's request")
-
-	// Declare some vars
-	var body []byte
-	var err error
-	var str string
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) // code 200
-
-	// extract the shard id from the request 
-		if r.Body != nil {
-		// Read the message body into a string
-		s, _ := ioutil.ReadAll(r.Body)
-		log.Println(string(s))
-
-		// Python packs the input in Unicode for some reason so we need to convert it
-		sBody, _ := url.QueryUnescape(string(s))
-			if len(body) > 0 {
-				str = strings.Split(body, "/")[1]
-				log.Println(str)
-			}
-		}
-
-	
-
-	// Turn list of members into string for JSON response
-	str := shard_id.String()
-	log.Println("Members in my shard: " + str)
-
-	// Package it into a map->JSON->[]byte
-	resp := map[string]interface{}{
-		"result":    "Success",
-		"shard_ids": str,
+		"id": members,
 	}
 	body, err = json.Marshal(resp)
 	if err != nil {
