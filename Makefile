@@ -73,11 +73,14 @@ NET        = --net=mynet
 IP         = --ip=${PREFIX}
 VIEW       = -e VIEW="${PREFIX}2:${PORT},${PREFIX}3:${PORT},${PREFIX}4:${PORT}"
 SHARDS     = -e S="3"
-TAG        = cs128-hw3
+TAG        = ${CONTAINER}
 NAME       = --name REPLICA_
 REPLICA2   = ${NET} ${IP}2 ${VIEW} -e IP_PORT="${PREFIX}2:${PORT}" ${SHARDS} ${NAME}2 ${TAG}
 REPLICA3   = ${NET} ${IP}3 ${VIEW} -e IP_PORT="${PREFIX}3:${PORT}" ${SHARDS} ${NAME}3 ${TAG}
 REPLICA4   = ${NET} ${IP}4 ${VIEW} -e IP_PORT="${PREFIX}4:${PORT}" ${SHARDS} ${NAME}4 ${TAG}
+REPLICA5   = ${NET} ${IP}5 ${VIEW} -e IP_PORT="${PREFIX}5:${PORT}" ${SHARDS} ${NAME}5 ${TAG}
+REPLICA6   = ${NET} ${IP}6 ${VIEW} -e IP_PORT="${PREFIX}6:${PORT}" ${SHARDS} ${NAME}6 ${TAG}
+REPLICA7   = ${NET} ${IP}7 ${VIEW} -e IP_PORT="${PREFIX}7:${PORT}" ${SHARDS} ${NAME}7 ${TAG}
 SINGLE     = ${NET} ${IP}2 -e IP_PORT="${PREFIX}2:${PORT}" ${NAME}1 ${TAG}
 
 # These three commands get a list of all containers running, all containers, and all images
