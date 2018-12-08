@@ -28,9 +28,10 @@ type Shard interface {
 	// Return number of servers
 	CountServers() int
 
-	// Returns the number of elemetns in the shard map
+	// Return true if we contain the server
 	ContainsServer(string) bool
 
+	// Return true if we contain the shard
 	ContainsShard(string) bool
 
 	// Deletes a shard ID from the shard list
@@ -93,6 +94,27 @@ type ShardList struct {
 	Tree         RBTree              // This is our red-black tree holding the shard positions on the ring
 	Size         int                 // total number of servers
 	NumShards    int                 // total number of shards
+}
+
+// GetAllShards returns a comma-separated list of shards
+func (s *ShardList) GetAllShards() string {
+	if s != nil {
+		var sl []string
+		for k := range s.ShardString {
+			sl = append(sl, k)
+		}
+		st := strings.Join(sl, ", ")
+		return st
+	}
+	return ""
+}
+
+// GetMembers returns the members of one shard
+func (s *ShardList) GetMembers(shard string) string {
+	if s != nil {
+		return s.ShardString[shard]
+	}
+	return ""
 }
 
 // FindBob returns a random element of the chosen shard
@@ -406,15 +428,4 @@ func (s *ShardList) ChangeShardNumber(n int, err error) bool {
 // ShuffleServers redistributes servers among shards
 func (s *ShardList) ShuffleServers() {
 
-}
-
-// GetAllShards returns a comma separated string of all shard ids
-func (s *ShardList) GetAllShards() string {
-	return "0,1,2"
-}
-
-// GetMembers returns a comma separated string of all member servers addresses
-func (s *ShardList) GetMembers(id string) string {
-	id = "176.32.164.2:8080,176.32.164.3:8080"
-	return id
 }

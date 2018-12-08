@@ -790,7 +790,7 @@ func (app *App) ViewDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-//ShardGetMyIdHandler returns my current shard id
+//ShardGetMyIDHandler returns my current shard id
 func (app *App) ShardGetMyIDHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling /shard GET request")
 
@@ -803,7 +803,7 @@ func (app *App) ShardGetMyIDHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK) // code 200
 
 	// returns the shard I am in
-	containerID = MyShard.PrimaryID()
+	containerID = app.shard.PrimaryID()
 
 	// Package it into a map->JSON->[]byte
 	resp := map[string]interface{}{
@@ -813,7 +813,6 @@ func (app *App) ShardGetMyIDHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
 	}
-
 	w.Write(body)
 }
 
@@ -829,17 +828,16 @@ func (app *App) ShardGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK) // code 200
 
-	members = app.shard.GetAllShards()
+	members = MyShard.GetAllShards()
 
 	// Package it into a map->JSON->[]byte
 	resp := map[string]interface{}{
-		"id": members,
+		"shard_ids": members,
 	}
 	body, err = json.Marshal(resp)
 	if err != nil {
 		log.Fatalln("FATAL ERROR: Failed to marshal JSON response")
 	}
-
 	w.Write(body)
 }
 
@@ -849,19 +847,25 @@ func (app *App) ShardGetMembersHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling GET members request")
 
 	// Read the key from the URL using Gorilla Mux URL parsing.
-	vars := mux.Vars(r)
-	shard := vars["shard-id"]
 
 	// Declare some variables here and define them below.
 	var body []byte    // Response body
 	var err error      // Error value
 	var shardID string // shard id extracted from request
 	var members string // comma separated servers
-	var invalid bool   // flag true if shard in invalid
+	var invalid bool
 
 	log.Println("GET with members: ", members)
 
-	shardID = shard
+	invalid = false
+	s, _ := ioutil.ReadAll(r.Body)
+	log.Println(string(s))
+
+	// Python packs the input in Unicode for some reason so we need to convert it
+	sBody, _ := url.QueryUnescape(string(s))
+	// want to grab the value after /shard/members/
+	shardID = strings.Split(sBody, "/shard/members/")[0]
+
 	invalid = app.shard.ContainsShard(shardID)
 
 	if invalid {

@@ -25,6 +25,8 @@ const (
 	changeNum   = "/changeShardNumber"
 	keySuffix   = "/{subject}"
 	shardSuffix = "/{shard-id}"
+	myID        = "/my_id"
+	allID       = "/all_ids"
 
 	// Maximum input restrictions
 	maxVal = 1048576 // 1 megabyte
