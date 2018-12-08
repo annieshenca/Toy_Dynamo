@@ -4,7 +4,7 @@
 / COPYRIGHT 2018 © by TEAMAWESOME			  *
 ***********************************************/
 
-package hw4
+package main
 
 import (
 	"bytes"
@@ -157,7 +157,6 @@ func sendRequest(port string, typeReq string, route string, t *testing.T, status
 }
 
 func getNextID() int {
-	nextID++
 	return nextID
 }
 

@@ -3,7 +3,7 @@
 / AUTHOR: Vien Van (vhvan@ucsc.edu)			  *
 / COPYRIGHT 2018 © by TEAMAWESOME			  *
 ***********************************************/
-package hw4
+package main
 
 import (
 	"net/http"
